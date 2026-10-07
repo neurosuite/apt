@@ -2,8 +2,8 @@ name: Publish
 
 # Rebuilds the apt repository from the .deb files attached to the GitHub releases of the
 # Neurosuite repositories and deploys it to GitHub Pages (https://neurosuite.github.io/apt).
-# Published releases go to the "main" component, pre-releases to "testing". Draft releases
-# are not included.
+# Published releases from 3.0.0 on go to the "main" component, pre-releases to "testing".
+# Drafts and the older 2.x releases (built for Ubuntu 12.04 and 14.04) are not included.
 on:
   workflow_dispatch:
   schedule:
@@ -42,10 +42,11 @@ jobs:
           mkdir -p incoming/main incoming/testing
           for repo in libneurosuite neuroscope klusters ndmanager ndmanager-plugins; do
             gh release list -R neurosuite/$repo --json tagName,isDraft,isPrerelease \
-              -q '.[] | select(.isDraft | not) | "\(.tagName) \(.isPrerelease)"' |
+              -q '.[] | select((.isDraft | not) and (.tagName | test("^v[3-9]"))) | "\(.tagName) \(.isPrerelease)"' |
             while read -r tag pre; do
               component=main; [ "$pre" = true ] && component=testing
-              gh release download "$tag" -R neurosuite/$repo -p '*.deb' -D "incoming/$component/$repo-$tag"
+              gh release download "$tag" -R neurosuite/$repo -p '*.deb' -D "incoming/$component/$repo-$tag" ||
+                echo "No .deb files in $repo $tag"
               # libneurosuite3 comes from the libneurosuite release only. The copies attached
               # to the application releases are left out.
               if [ $repo != libneurosuite ]; then rm -f "incoming/$component/$repo-$tag"/libneurosuite*.deb; fi
