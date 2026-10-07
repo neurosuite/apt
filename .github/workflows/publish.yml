@@ -58,7 +58,9 @@ jobs:
             find incoming/$component -name '*.deb' -print0 |
               xargs -0 -r reprepro -C $component includedeb noble
           done
-          mkdir -p public
+          # Writes the (possibly empty) indices, so that dists/ exists before any release.
+          reprepro export noble
+          mkdir -p public pool
           cp -r dists pool public/
           gpg --armor --export > public/neurosuite.asc
           cp index.html public/
