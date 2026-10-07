@@ -1,0 +1,77 @@
+name: Publish
+
+# Rebuilds the apt repository from the .deb files attached to the GitHub releases of the
+# Neurosuite repositories and deploys it to GitHub Pages (https://neurosuite.github.io/apt).
+# Published releases go to the "main" component, pre-releases to "testing". Draft releases
+# are not included.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install reprepro
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends reprepro
+      - name: Import the signing key
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        run: |
+          echo "$APT_SIGNING_KEY" | gpg --batch --import
+          gpg --list-secret-keys
+      - name: Download the packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p incoming/main incoming/testing
+          for repo in libneurosuite neuroscope klusters ndmanager ndmanager-plugins; do
+            gh release list -R neurosuite/$repo --json tagName,isDraft,isPrerelease \
+              -q '.[] | select(.isDraft | not) | "\(.tagName) \(.isPrerelease)"' |
+            while read -r tag pre; do
+              component=main; [ "$pre" = true ] && component=testing
+              gh release download "$tag" -R neurosuite/$repo -p '*.deb' -D "incoming/$component/$repo-$tag"
+              # libneurosuite3 comes from the libneurosuite release only. The copies attached
+              # to the application releases are left out.
+              if [ $repo != libneurosuite ]; then rm -f "incoming/$component/$repo-$tag"/libneurosuite*.deb; fi
+            done
+          done
+          find incoming -name '*.deb' | sort
+      - name: Build the repository
+        run: |
+          for component in main testing; do
+            find incoming/$component -name '*.deb' -print0 |
+              xargs -0 -r reprepro -C $component includedeb noble
+          done
+          mkdir -p public
+          cp -r dists pool public/
+          gpg --armor --export > public/neurosuite.asc
+          cp index.html public/
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

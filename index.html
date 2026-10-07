@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neurosuite apt repository</title>
+<style>
+  :root { --bg: #ffffff; --fg: #1f2328; --muted: #59636e; --code: #f6f8fa; --link: #0969da; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --code: #161b22; --link: #4493f8; }
+  }
+  body { background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif;
+         max-width: 46rem; margin: 2rem auto; padding: 0 16px; }
+  pre { background: var(--code); padding: 12px; overflow-x: auto; border-radius: 6px; }
+  a { color: var(--link); }
+  p.note { color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Neurosuite apt repository</h1>
+<p>Packages of <a href="https://github.com/neurosuite/neuroscope">NeuroScope</a>,
+<a href="https://github.com/neurosuite/klusters">Klusters</a>,
+<a href="https://github.com/neurosuite/ndmanager">NDManager</a> and the
+<a href="https://github.com/neurosuite/ndmanager-plugins">NDManager plugins</a> for Ubuntu 24.04 and newer (amd64).</p>
+
+<h2>Setup</h2>
+<pre>sudo install -d /etc/apt/keyrings
+sudo curl -fsSL -o /etc/apt/keyrings/neurosuite.asc https://neurosuite.github.io/apt/neurosuite.asc
+sudo tee /etc/apt/sources.list.d/neurosuite.sources &gt;/dev/null &lt;&lt;'END'
+Types: deb
+URIs: https://neurosuite.github.io/apt
+Suites: noble
+Components: main
+Signed-By: /etc/apt/keyrings/neurosuite.asc
+END
+sudo apt update
+sudo apt install neuroscope klusters ndmanager ndmanager-plugins</pre>
+
+<p>Release candidates are in the <code>testing</code> component. To get them, use
+<code>Components: main testing</code>.</p>
+
+<p class="note">The repository is rebuilt from the
+<a href="https://github.com/neurosuite">GitHub releases</a> every night. Other ways to install the
+applications are listed on <a href="https://neurosuite.github.io">neurosuite.github.io</a>.</p>
+</body>
+</html>

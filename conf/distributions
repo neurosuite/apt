@@ -1,0 +1,8 @@
+Origin: Neurosuite
+Label: Neurosuite
+Suite: noble
+Codename: noble
+Architectures: amd64
+Components: main testing
+Description: Neurosuite packages (NeuroScope, Klusters, NDManager and the NDManager plugins) for Ubuntu 24.04
+SignWith: default
